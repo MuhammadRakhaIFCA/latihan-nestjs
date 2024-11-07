@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  INTERN
+  ENGINEER
+  ADMIN
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  email           String   @unique
+  password        String
+  profilePicture  String?
+  following_count Int      @default(0)
+  follower_count  Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  posts     Post[]
+  comments  Comment[]
+  following Follow[]  @relation("user_following")
+  followers Follow[]  @relation("user_followers")
+  sender    Chat[]    @relation("chat_sender")
+  receiver  Chat[]    @relation("chat_receiver")
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  description String?
+  image       String?
+  user_id     Int
+  user        User      @relation(fields: [user_id], references: [id])
+  comments    Comment[]
+}
+
+model Comment {
+  id      Int    @id @default(autoincrement())
+  content String
+  user_id Int
+  post_id Int
+  user    User   @relation(fields: [user_id], references: [id])
+  post    Post   @relation(fields: [post_id], references: [id])
+}
+
+model Follow {
+  id          Int  @id @default(autoincrement())
+  follower_id Int
+  followed_id Int
+  follower    User @relation("user_following", fields: [follower_id], references: [id]) // The user who follows
+  followed    User @relation("user_followers", fields: [followed_id], references: [id]) // The user being followed
+
+  @@unique([follower_id, followed_id])
+}
+
+model Chat {
+  id          Int  @id @default(autoincrement())
+  sender_id   Int
+  receiver_id Int
+  sender      User @relation("chat_sender", fields: [sender_id], references: [id])
+  receiver    User @relation("chat_receiver", fields: [receiver_id], references: [id])
+}
